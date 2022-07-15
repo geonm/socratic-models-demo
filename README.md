@@ -32,7 +32,7 @@
     Relevant keywords which we can list and are seperated with comma are:'''
 ```
 
-## Overview
+## Usage
 ### installation
 ```
 $ conda install --yes -c pytorch pytorch=1.7.1 torchvision cudatoolkit=11.0
