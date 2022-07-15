@@ -1,0 +1,158 @@
+<!doctype! html>
+<html>
+	<head>
+		<title>simple demo</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" type="text/css">
+
+		<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://cdn.staticfile.org/tether/1.4.0/js/tether.min.js"></script>
+		<script src="https://cdn.staticfile.org/twitter-bootstrap/4.0.0-alpha.6/js/bootstrap.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+	</head>
+    <style>
+        .container {
+            width: 1000em;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .image {
+           position: relative;
+        }
+
+        h2 {
+           position: absolute;
+           top: 200px;
+           left: 10px;
+           width: 100px;
+           color: white;
+           background: rgb(0, 0, 0);
+           background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+	<body>
+		<div id="app">
+			<div>
+				<form id="upload-form" method="post" enctype="multipart/form-data">
+					<h5>simple test demo</h5>
+					<div class="form-content-container">
+						image_url: <input id="upload_url" type="text" name="image_url" /><br>
+						<input id="upload_button" type="submit" value="Submit" />
+                    </div>
+				</form>
+			</div>
+			<hr>
+			<div id="result" v-if="show">
+                <img id="input_image" :src="input_image_url" height="224" style="float:left;margin:10px;">
+                <br style="clear:both">
+                <div class="item">
+					<div><h5>Generated captions</h5>
+                        <li v-for="(info, iter) in caption_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both">
+					<div><h5>Generated keywords</h5>
+                        <li v-for="(info, iter) in keyword_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both">
+                    <div><h3>Reasoning</h3></div>
+					<div><h5>openimage classifier</h5>
+                        <li v-for="(info, iter) in openimage_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both">
+                    <div><h5>tencentml classifier</h5></div>
+                        <li v-for="(info, iter) in tencentml_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both" />
+                    <div><h5>place365 classifier</h5></div>
+                        <li v-for="(info, iter) in place365_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both" />
+                    <div><h5>imgtype classifier</h5></div>
+                        <li v-for="(info, iter) in imgtype_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both" />
+                    <div><h5>people classifier</h5></div>
+                        <li v-for="(info, iter) in ppl_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both" />
+                    <div><h5>num people classifier</h5></div>
+                        <li v-for="(info, iter) in ifppl_results">
+                            {% raw %}{{info[1]}}{% endraw %}: {% raw %}{{info[0]}}{% endraw %}
+                        </li>
+                    <br style="clear:both" />
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<script>
+			$(function() {
+				function getQueryStrings() {
+					var vars = [], hash, hashes;
+					if (window.location.href.indexOf('#') === -1) {
+						hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+					} else {
+						hashes = window.location.href.slice(window.location.href.indexOf('?') + 1, window.location.href.indexOf('#')).split('&');
+					}
+					for(var i = 0; i < hashes.length; i++) {
+						hash = hashes[i].split('=');
+						vars.push(hash[0]);
+						vars[hash[0]] = hash[1];
+					}
+					return vars;
+				}
+
+				var session_id = '{{session_id}}';
+
+				var app = new Vue({
+					el: '#app',
+					data: {
+						session_id: session_id,
+                        show: false,
+					},
+				});
+
+				var render = function(session_id) {
+					app.session_id = session_id;
+                    app.server_info = ['loading'];
+					$.get('/static/results/' + session_id + '/results.json', function(data) {
+						if (typeof data == 'string') {
+							data = JSON.parse(data);
+						}
+                        app.input_image_url = data.image_url;
+                        app.session_id = data.session_id;
+                        app.openimage_results = data.openimage_results;
+                        app.tencentml_results = data.tencentml_results;
+                        app.place365_results = data.place365_results;
+                        app.imgtype_results = data.imgtype_results;
+                        app.ppl_results = data.ppl_results;
+                        app.ifppl_results = data.ifppl_results;
+                        app.caption_results = data.caption_results;
+                        app.keyword_results = data.keyword_results;
+                        app.generated_prompt = data.generated_prompt;
+                        app.show = true
+					});
+				}
+
+				if (session_id != 'dummy_session_id') {
+					window.history.pushState({},"", '/?r=' + session_id);
+					render(session_id);
+				} else {
+					var queryStrings = getQueryStrings();
+					var rid = queryStrings['r'];
+					if (rid) {
+						render(rid);
+					}
+				}
+			})
+		</script>
+	</body>
+</html>
