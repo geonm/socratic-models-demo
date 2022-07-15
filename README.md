@@ -33,6 +33,14 @@
 ```
 
 ## Overview
+### installation
+```
+$ conda install --yes -c pytorch pytorch=1.7.1 torchvision cudatoolkit=11.0
+$ pip install ftfy regex tqdm
+$ pip install git+https://github.com/openai/CLIP.git
+$ pip install openai
+```
+
 ### Get your OpenAI API Key for GPT3
 + Don't worry about it. It's free.
 + See [https://beta.openai.com/account/api-keys](https://beta.openai.com/account/api-keys)
