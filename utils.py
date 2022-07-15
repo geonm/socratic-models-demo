@@ -69,8 +69,8 @@ def generate_prompt(openimage_classes, tencentml_classes, place365_classes, imgt
     return prompt_caption, prompt_search
 
 
-def generate_captions(prompt, num_captions=10):
-    openai.api_key = ''
+def generate_captions(prompt, openai_api_key, num_captions=10):
+    openai.api_key = openai_api_key
     gpt_version = "text-davinci-002"
     max_tokens = 32
     temperature = 0.9

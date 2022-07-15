@@ -5,7 +5,6 @@ import requests
 from urllib.request import urlopen
 from io import BytesIO
 import uuid
-import cv2
 import time
 import argparse
 import torch
@@ -13,7 +12,7 @@ import clip
 import utils
 import csv
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '' # CPU mode
+#os.environ['CUDA_VISIBLE_DEVICES'] = '' # CPU mode
 
 # flask
 app = Flask(__name__)
@@ -25,21 +24,24 @@ parser = argparse.ArgumentParser()
 
 ## flask demo parameter
 parser.add_argument('--port', default=5000, type=int,
-                    help='flask demo will be running on http://0.0.0.0:port/')
+        help='This demo will be running on http://0.0.0.0:port/')
+parser.add_argument('--openai-API-key', default=None, type=str,
+        help='You can get an openai API key for free. See https://beta.openai.com/account/api-keys')
+
 
 class Model:
     def __init__(self, args):
         self.args = args
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        print('\n\tLoading VML...')
+        print('\n\tLoading VML (CLIP ViT-L/14)...')
         self.clip_model, self.clip_preprocess = clip.load("ViT-L/14", device=self.device)
         self.clip_model.eval()
-        print('\n\tLoading openimage classifier.')
-        self.openimage_classifier_weights = torch.load('./prompts/clip_ViTL14_openimage_classifier_weights.pt', map_location=self.device)
+        print('\n\tLoading classifier.')
+        self.openimage_classifier_weights = torch.load('./prompts/clip_ViTL14_openimage_classifier_weights.pt', map_location=self.device).type(torch.FloatTensor)
         self.openimage_classnames = self.load_openimage_classnames('./prompts/openimage-classnames.csv')
-        self.tencentml_classifier_weights = torch.load('./prompts/clip_ViTL14_tencentml_classifier_weights.pt', map_location=self.device)
+        self.tencentml_classifier_weights = torch.load('./prompts/clip_ViTL14_tencentml_classifier_weights.pt', map_location=self.device).type(torch.FloatTensor)
         self.tencentml_classnames = self.load_tencentml_classnames('./prompts/tencent-ml-classnames.txt')
-        self.place365_classifier_weights = torch.load('./prompts/clip_ViTL14_place365_classifier_weights.pt', map_location=self.device)
+        self.place365_classifier_weights = torch.load('./prompts/clip_ViTL14_place365_classifier_weights.pt', map_location=self.device).type(torch.FloatTensor)
         self.place365_classnames = self.load_tencentml_classnames('./prompts/place365-classnames.txt')
 
         img_types = ['photo', 'cartoon', 'sketch', 'painting']
@@ -80,6 +82,7 @@ class Model:
             image_features = self.clip_model.encode_image(image_input)
 
         image_features /= image_features.norm(dim=-1, keepdim=True)
+        #image_features = image_features.to(self.openimage_classifier_weights.dtype)
         sim = (100.0 * image_features @ self.openimage_classifier_weights.T).softmax(dim=-1)
         openimage_scores, indices = [drop_gpu(tensor) for tensor in sim[0].topk(10)]
         openimage_classes = [self.openimage_classnames[idx] for idx in indices]
@@ -150,8 +153,8 @@ def index_post():
     image_features, openimage_scores, openimage_classes, tencentml_scores, tencentml_classes, place365_scores, place365_classes, imgtype_scores, imgtype_classes, ppl_scores, ppl_classes, ifppl_scores, ifppl_classes = model.zeroshot_classifier(image)
 
     prompt_caption, prompt_search = utils.generate_prompt(openimage_classes, tencentml_classes, place365_classes, imgtype_classes, ppl_classes, ifppl_classes)
-    generated_captions = utils.generate_captions(prompt_caption, num_captions=3)
-    generated_keywords = utils.generate_captions(prompt_search, num_captions=1)
+    generated_captions = utils.generate_captions(prompt_caption, model.args.openai_API_key, num_captions=3)
+    generated_keywords = utils.generate_captions(prompt_search, model.args.openai_API_key, num_captions=1)
 
     caption_scores, sorted_captions = model.sorting_texts(image_features, generated_captions)
     keyword_scores, sorted_keywords = model.sorting_texts(image_features, generated_keywords)
