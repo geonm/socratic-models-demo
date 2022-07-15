@@ -60,4 +60,5 @@ $ python demo_socratic.py --port 5000 --openai-API-key {YOUR_OpenAI_API_KEY}
 + url: https://image.shutterstock.com/image-photo/man-climbing-mountain-260nw-613489679.jpg
 + generated caption and keywords
 ![result](.github/demo_result1.PNG)
+
 ![reasoning](.github/demo_result2.PNG)
